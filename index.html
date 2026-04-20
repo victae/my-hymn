@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>나의 찬송가 보관함</title>
-    <script src="hymn_data.js"></script>
     <style>
         body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; text-align: center; margin: 0; padding: 0; background-color: #f0f2f5; color: #333; }
         .container { max-width: 600px; margin: 0 auto; min-height: 100vh; background-color: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
@@ -13,12 +12,14 @@
         input { flex: 1; padding: 15px; font-size: 18px; border: 2px solid #ddd; border-radius: 8px; outline: none; width: 100%; box-sizing: border-box; }
         .search-btn { padding: 0 20px; font-size: 18px; background-color: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; }
         #resultList { list-style: none; padding: 0; margin: 0; text-align: left; }
-        #resultList li { padding: 15px 20px; border-bottom: 1px solid #eee; cursor: pointer; }
-        .hymn-info { font-size: 18px; font-weight: bold; color: #2c3e50; }
-        .lyrics-preview { font-size: 14px; color: #7f8c8d; }
-        .highlight { color: #e74c3c; font-weight: bold; background-color: #fff3f3; }
+        #resultList li { padding: 15px 20px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 16px; }
         #imageSection { display: none; padding: 10px; }
         .back-btn { width: 100%; padding: 15px; font-size: 18px; background-color: #95a5a6; color: white; border: none; border-radius: 8px; margin-bottom: 15px; cursor: pointer; }
+        
+        /* 오디오 영역 스타일 */
+        .audio-container { margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 12px; border: 1px solid #eee; }
+        .audio-btns { display: flex; gap: 10px; margin-bottom: 10px; }
+        .play-btn { flex: 1; padding: 12px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; }
         img { width: 100%; height: auto; margin-bottom: 10px; display: block; border: 1px solid #eee; }
         .empty-msg { padding: 60px 20px; color: #999; }
     </style>
@@ -41,17 +42,24 @@
 
     <div id="imageSection">
         <button class="back-btn" onclick="showList()">⬅️ 리스트로 돌아가기</button>
+        
+        <div class="audio-container">
+            <div class="audio-btns">
+                <button class="play-btn" style="background-color: #4CAF50;" onclick="playHymn('SING')">🎤 찬양 듣기</button>
+                <button class="play-btn" style="background-color: #2196F3;" onclick="playHymn('INST')">🎹 반주 듣기</button>
+            </div>
+            <audio id="hymnAudio" controls style="width: 100%; display: none;"></audio>
+            <p id="audioStatus" style="font-size: 13px; color: #888; margin-top: 8px;">찬양 모드를 선택해 주세요.</p>
+        </div>
+
         <div id="imageCanvas"></div>
     </div>
 </div>
 
 <script>
-
-<script>
-// 1. 파일 리스트 및 초기 변수 설정
-// ⚠️ 중요: 곡목 리스트는 반드시 아래 대괄호 [ ] 안에 따옴표와 쉼표로 구분해서 넣으세요.
+// 1. 파일 리스트 설정
 const fileList = [
-"001장_만복의_근원_하나님.jpg",
+    "001장_만복의_근원_하나님.jpg",
     "002장_찬양_성부_성자_성령.jpg",
     "003장_성부_성자와_성령.jpg",
     "004장_성부_성자와_성령.jpg",
@@ -687,75 +695,12 @@ const fileList = [
     "638장_주_너를_지키시고.jpg",
     "639장_주_함께하소서__640장_아멘__641장_아멘__642장_아멘.jpg",
     "643장_아멘__644장_아멘__645장_아멘.jpg"
-    // ... 나머지 600여 곡도 이 아래에 같은 형식으로 붙여넣으시면 됩니다.
+    // 여기에 나머지 파일명을 계속 추가하세요.
 ];
 
-let currentPlayingNo = ""; // 현재 선택된 번호 저장용
+let currentPlayingNo = ""; 
 
-// 2. 이미지 표시 함수 (리스트 클릭 시 실행)
-function showImage(hymnNo) {
-    const canvas = document.getElementById('imageCanvas');
-    canvas.innerHTML = ''; // 기존 이미지 초기화
-
-    // 음원 재생을 위해 번호를 3자리(001 등)로 변환해 저장
-    currentPlayingNo = hymnNo.padStart(3, '0');
-
-    // 새로운 곡을 열 때 오디오 플레이어 초기화
-    const audio = document.getElementById('hymnAudio');
-    if (audio) {
-        audio.pause();
-        audio.src = "";
-        audio.style.display = 'none';
-        document.getElementById('audioStatus').innerText = "찬양 모드를 선택해 주세요.";
-    }
-
-    // 파일 리스트에서 해당 번호로 시작하는 파일들 찾기 (패턴: "135장")
-    const targetFiles = fileList.filter(file => file.includes(hymnNo + "장"));
-
-    if (targetFiles.length > 0) {
-        targetFiles.forEach(fileName => {
-            const img = document.createElement('img');
-            img.src = `images/${fileName}`; // images 폴더 내의 파일 호출
-            img.style.width = '100%';
-            img.style.display = 'block';
-            img.style.marginBottom = '10px';
-            canvas.appendChild(img);
-        });
-
-        // 화면 전환: 검색창 숨기고 이미지 구역 보이기
-        document.getElementById('searchView').style.display = 'none';
-        document.getElementById('imageSection').style.display = 'block';
-        window.scrollTo(0, 0); 
-    } else {
-        alert("해당 번호의 악보 파일을 찾을 수 없습니다.");
-    }
-}
-
-// 3. 음원 재생 함수 (R2 주소 연결)
-function playHymn(type) {
-    const audio = document.getElementById('hymnAudio');
-    const status = document.getElementById('audioStatus');
-    
-    // 태한님의 Cloudflare R2 고유 주소입니다.
-    const baseUrl = "https://pub-3e09c4a7bdce410d81cd2b400a526c9f.r2.dev"; 
-    
-    // 최종 경로 형식: 주소/AUDIO/SING/001.mp3
-    const fileUrl = `${baseUrl}/AUDIO/${type}/${currentPlayingNo}.mp3`;
-    
-    audio.src = fileUrl;
-    audio.style.display = 'block';
-    status.innerText = (type === 'SING' ? "🎤 찬양" : "🎹 반주") + " 로딩 중...";
-    
-    audio.play().then(() => {
-        status.innerText = (type === 'SING' ? "🎤 은혜로운 찬양" : "🎹 감미로운 반주") + " 재생 중";
-    }).catch(e => {
-        console.error("재생 에러:", e);
-        status.innerText = "❌ 음원을 찾을 수 없습니다. (R2 설정 확인 필요)";
-        audio.style.display = 'none';
-    });
-}
-
-// 4. 검색 함수
+// 2. 검색 함수
 function searchHymn() {
     const input = document.getElementById('searchInput').value;
     const resultList = document.getElementById('resultList');
@@ -765,31 +710,85 @@ function searchHymn() {
 
     const filtered = fileList.filter(file => file.includes(input));
 
+    if (filtered.length === 0) {
+        resultList.innerHTML = '<div class="empty-msg">검색 결과가 없습니다.</div>';
+        return;
+    }
+
     filtered.forEach(file => {
-        // 파일명에서 "장" 앞의 숫자만 추출 (예: "[새찬송가] 135장" -> "135")
         const match = file.match(/(\d+)장/);
         if (match) {
             const hymnNo = match[1];
             const li = document.createElement('li');
-            li.innerText = file.replace('.jpg', ''); 
+            li.innerText = file.replace('.jpg', '').replace(/_/g, ' '); 
             li.onclick = () => showImage(hymnNo);
             resultList.appendChild(li);
         }
     });
 }
 
+// 3. 악보 표시 함수
+function showImage(hymnNo) {
+    const canvas = document.getElementById('imageCanvas');
+    canvas.innerHTML = ''; 
+
+    // 번호를 3자리로 맞춰 음원 준비 (예: 1 -> 001)
+    currentPlayingNo = hymnNo.padStart(3, '0');
+
+    // 오디오 초기화
+    const audio = document.getElementById('hymnAudio');
+    const status = document.getElementById('audioStatus');
+    audio.pause();
+    audio.src = "";
+    audio.style.display = 'none';
+    status.innerText = "찬양 모드를 선택해 주세요.";
+
+    // 정확한 번호 매칭을 위해 파일명 시작 부분 확인
+    const targetFiles = fileList.filter(file => file.startsWith(hymnNo.padStart(3, '0') + "장"));
+
+    if (targetFiles.length > 0) {
+        targetFiles.forEach(fileName => {
+            const img = document.createElement('img');
+            img.src = `images/${fileName}`;
+            canvas.appendChild(img);
+        });
+
+        document.getElementById('searchView').style.display = 'none';
+        document.getElementById('imageSection').style.display = 'block';
+        window.scrollTo(0, 0); 
+    } else {
+        alert("악보 파일을 찾을 수 없습니다.");
+    }
+}
+
+// 4. 음원 재생 함수
+function playHymn(type) {
+    const audio = document.getElementById('hymnAudio');
+    const status = document.getElementById('audioStatus');
+    const baseUrl = "https://pub-3e09c4a7bdce410d81cd2b400a526c9f.r2.dev"; 
+    
+    const fileUrl = `${baseUrl}/AUDIO/${type}/${currentPlayingNo}.mp3`;
+    
+    audio.src = fileUrl;
+    audio.style.display = 'block';
+    status.innerText = (type === 'SING' ? "🎤 찬양" : "🎹 반주") + " 로딩 중...";
+    
+    audio.play().then(() => {
+        status.innerText = (type === 'SING' ? "🎤 은혜로운 찬양" : "🎹 감미로운 반주") + " 재생 중";
+    }).catch(e => {
+        status.innerText = "❌ 음원을 찾을 수 없습니다. (R2 주소 확인 필요)";
+        audio.style.display = 'none';
+    });
+}
+
 // 5. 리스트로 돌아가기
 function showList() {
     const audio = document.getElementById('hymnAudio');
-    if (audio) {
-        audio.pause();
-        audio.src = "";
-    }
+    audio.pause();
     document.getElementById('imageSection').style.display = 'none';
     document.getElementById('searchView').style.display = 'block';
 }
 </script>
-    
-</script>
+
 </body>
 </html>
