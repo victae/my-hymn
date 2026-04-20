@@ -2,31 +2,92 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>찬송가 보관함</title>
+
     <meta name="apple-mobile-web-app-title" content="찬송가">
-    
     <link rel="apple-touch-icon" href="images/icon.png">
-    
+    <link rel="icon" type="image/png" href="images/icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>나의 찬송가 보관함</title>
+    <meta name="theme-color" content="#2c3e50">
+
     <style>
+        /* [기본 스타일] */
         body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; text-align: center; margin: 0; padding: 0; background-color: #f0f2f5; color: #333; }
         .container { max-width: 600px; margin: 0 auto; min-height: 100vh; background-color: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .header { padding: 20px; background-color: #2c3e50; color: white; position: sticky; top: 0; z-index: 100; }
-        .search-box { display: flex; gap: 10px; padding: 10px 20px; }
-        input { flex: 1; padding: 15px; font-size: 18px; border: 2px solid #ddd; border-radius: 8px; outline: none; width: 100%; box-sizing: border-box; }
-        .search-btn { padding: 0 20px; font-size: 18px; background-color: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; }
-        #resultList { list-style: none; padding: 0; margin: 0; text-align: left; }
-        #resultList li { padding: 15px 20px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 16px; }
-        #imageSection { display: none; padding: 10px; }
-        .back-btn { width: 100%; padding: 15px; font-size: 18px; background-color: #95a5a6; color: white; border: none; border-radius: 8px; margin-bottom: 15px; cursor: pointer; }
         
-        /* 오디오 영역 스타일 */
-        .audio-container { margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 12px; border: 1px solid #eee; }
-        .audio-btns { display: flex; gap: 10px; margin-bottom: 10px; }
-        .play-btn { flex: 1; padding: 12px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; }
-        img { width: 100%; height: auto; margin-bottom: 10px; display: block; border: 1px solid #eee; }
-        .empty-msg { padding: 60px 20px; color: #999; }
+        /* [헤더 디자인] - 아이콘 색상인 #2c3e50으로 통일 */
+        .header { 
+            padding: 30px 20px; 
+            background-color: #2c3e50; 
+            color: white; 
+            position: sticky; 
+            top: 0; 
+            z-index: 100;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+        .header h2 { 
+            margin: 0 0 20px 0; 
+            font-weight: 500; 
+            font-size: 22px; 
+            letter-spacing: -0.5px;
+        }
+
+        /* [검색창 디자인] */
+        .search-box { display: flex; gap: 10px; }
+        input { 
+            flex: 1; 
+            padding: 14px 18px; 
+            font-size: 16px; 
+            border: none; 
+            border-radius: 10px; 
+            outline: none; 
+            background-color: rgba(255,255,255,0.95);
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .search-btn { 
+            padding: 0 22px; 
+            font-size: 16px; 
+            background-color: #34495e; 
+            color: white; 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-weight: bold;
+        }
+
+        /* [결과 리스트] */
+        #resultList { list-style: none; padding: 0; margin: 0; text-align: left; }
+        #resultList li { 
+            padding: 18px 25px; 
+            border-bottom: 1px solid #f0f0f0; 
+            cursor: pointer; 
+            font-size: 17px;
+            transition: background 0.2s;
+        }
+        #resultList li:active { background-color: #f8f9fa; }
+
+        /* [악보 및 오디오 영역] */
+        #imageSection { display: none; padding: 15px; background-color: #fff; }
+        .back-btn { 
+            width: 100%; padding: 15px; font-size: 17px; 
+            background-color: #95a5a6; color: white; border: none; 
+            border-radius: 10px; margin-bottom: 15px; cursor: pointer; 
+        }
+        
+        .audio-container { 
+            margin-bottom: 20px; padding: 20px; 
+            background: #f8f9fa; border-radius: 15px; border: 1px solid #eee; 
+        }
+        .audio-btns { display: flex; gap: 12px; margin-bottom: 15px; }
+        .play-btn { 
+            flex: 1; padding: 14px; color: white; border: none; 
+            border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 15px; 
+        }
+        
+        img { width: 100%; height: auto; margin-bottom: 15px; display: block; border-radius: 4px; }
+        .empty-msg { padding: 80px 20px; color: #aaa; font-size: 15px; }
     </style>
 </head>
 <body>
@@ -34,14 +95,14 @@
 <div class="container">
     <div id="searchView">
         <div class="header">
-            <h2 style="margin:0 0 15px 0;">🎶 찬송가 보관함</h2>
+            <h2>찬송가 보관함</h2>
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="번호 / 제목 / 가사" onkeyup="if(event.keyCode==13) searchHymn()">
+                <input type="text" id="searchInput" placeholder="곡 번호나 제목을 입력하세요" onkeyup="if(event.keyCode==13) searchHymn()">
                 <button class="search-btn" onclick="searchHymn()">검색</button>
             </div>
         </div>
         <ul id="resultList">
-            <div class="empty-msg">번호, 제목, 가사로 검색하세요.</div>
+            <div class="empty-msg">원하는 찬송가를 검색해 보세요.</div>
         </ul>
     </div>
 
@@ -50,11 +111,11 @@
         
         <div class="audio-container">
             <div class="audio-btns">
-                <button class="play-btn" style="background-color: #4CAF50;" onclick="playHymn('SING')">🎤 찬양 듣기</button>
-                <button class="play-btn" style="background-color: #2196F3;" onclick="playHymn('INST')">🎹 연주 듣기</button>
+                <button class="play-btn" style="background-color: #2ecc71;" onclick="playHymn('SING')">🎤 찬양 듣기</button>
+                <button class="play-btn" style="background-color: #3498db;" onclick="playHymn('INST')">🎹 반주 듣기</button>
             </div>
             <audio id="hymnAudio" controls style="width: 100%; display: none;"></audio>
-            <p id="audioStatus" style="font-size: 13px; color: #888; margin-top: 8px;">찬양 모드를 선택해 주세요.</p>
+            <p id="audioStatus" style="font-size: 13px; color: #888; margin: 0;">찬양 모드를 선택해 주세요.</p>
         </div>
 
         <div id="imageCanvas"></div>
@@ -62,9 +123,12 @@
 </div>
 
 <script>
-// 1. 파일 리스트 설정
+/**
+ * [1. 곡목 리스트] 
+ * 태한님이 가지고 계신 645곡 리스트를 아래 대괄호 [ ] 안에 붙여넣으세요.
+ */
 const fileList = [
-    "001장_만복의_근원_하나님.jpg",
+"001장_만복의_근원_하나님.jpg",
     "002장_찬양_성부_성자_성령.jpg",
     "003장_성부_성자와_성령.jpg",
     "004장_성부_성자와_성령.jpg",
@@ -700,20 +764,22 @@ const fileList = [
     "638장_주_너를_지키시고.jpg",
     "639장_주_함께하소서__640장_아멘__641장_아멘__642장_아멘.jpg",
     "643장_아멘__644장_아멘__645장_아멘.jpg"
-    // 여기에 나머지 파일명을 계속 추가하세요.
 ];
 
 let currentPlayingNo = ""; 
 
-// 2. 검색 함수
+/** [2. 검색 기능] */
 function searchHymn() {
-    const input = document.getElementById('searchInput').value;
+    const input = document.getElementById('searchInput').value.trim().toLowerCase();
     const resultList = document.getElementById('resultList');
     resultList.innerHTML = ''; 
 
-    if (!input) return;
+    if (!input) {
+        resultList.innerHTML = '<div class="empty-msg">검색어를 입력해 주세요.</div>';
+        return;
+    }
 
-    const filtered = fileList.filter(file => file.includes(input));
+    const filtered = fileList.filter(file => file.toLowerCase().includes(input));
 
     if (filtered.length === 0) {
         resultList.innerHTML = '<div class="empty-msg">검색 결과가 없습니다.</div>';
@@ -732,24 +798,27 @@ function searchHymn() {
     });
 }
 
-// 3. 악보 표시 함수
+/** [3. 악보 표시 기능] */
 function showImage(hymnNo) {
     const canvas = document.getElementById('imageCanvas');
-    canvas.innerHTML = ''; 
-
-    // 번호를 3자리로 맞춰 음원 준비 (예: 1 -> 001)
-    currentPlayingNo = hymnNo.padStart(3, '0');
-
-    // 오디오 초기화
     const audio = document.getElementById('hymnAudio');
     const status = document.getElementById('audioStatus');
-    audio.pause();
-    audio.src = "";
-    audio.style.display = 'none';
-    status.innerText = "찬양 모드를 선택해 주세요.";
+    
+    canvas.innerHTML = ''; 
+    currentPlayingNo = hymnNo.padStart(3, '0');
 
-    // 정확한 번호 매칭을 위해 파일명 시작 부분 확인
-    const targetFiles = fileList.filter(file => file.startsWith(hymnNo.padStart(3, '0') + "장"));
+    if (audio) {
+        audio.pause();
+        audio.src = "";
+        audio.style.display = 'none';
+        status.innerText = "찬양 모드를 선택해 주세요.";
+    }
+
+    // 파일명이 001장 혹은 1장으로 시작하는 모든 이미지 매칭
+    const targetFiles = fileList.filter(file => 
+        file.startsWith(hymnNo.padStart(3, '0') + "장") || 
+        file.startsWith(hymnNo.replace(/^0+/, '') + "장")
+    );
 
     if (targetFiles.length > 0) {
         targetFiles.forEach(fileName => {
@@ -766,7 +835,7 @@ function showImage(hymnNo) {
     }
 }
 
-// 4. 음원 재생 함수
+/** [4. R2 오디오 재생 기능] */
 function playHymn(type) {
     const audio = document.getElementById('hymnAudio');
     const status = document.getElementById('audioStatus');
@@ -781,15 +850,15 @@ function playHymn(type) {
     audio.play().then(() => {
         status.innerText = (type === 'SING' ? "🎤 은혜로운 찬양" : "🎹 감미로운 반주") + " 재생 중";
     }).catch(e => {
-        status.innerText = "❌ 음원을 찾을 수 없습니다. (R2 주소 확인 필요)";
+        status.innerText = "❌ 음원을 찾을 수 없습니다.";
         audio.style.display = 'none';
     });
 }
 
-// 5. 리스트로 돌아가기
+/** [5. 목록으로 돌아가기] */
 function showList() {
     const audio = document.getElementById('hymnAudio');
-    audio.pause();
+    if (audio) audio.pause();
     document.getElementById('imageSection').style.display = 'none';
     document.getElementById('searchView').style.display = 'block';
 }
