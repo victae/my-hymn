@@ -13,10 +13,15 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#2c3e50">
 
+    <script src="hymn_data.js"></script>
+
     <style>
         /* [공통 스타일] */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow-x: hidden; background-color: #2c3e50; }
+        html, body { 
+            width: 100%; height: 100%; margin: 0; padding: 0; 
+            overflow-x: hidden; background-color: #ffffff; /* 배경 흰색 */
+        }
         .container { 
             width: 100%; min-height: 100vh; margin: 0; padding: 0;
             background-color: #fff; display: flex; flex-direction: column;
@@ -26,7 +31,7 @@
             .container { width: 600px; margin: 0 auto; box-shadow: 0 0 20px rgba(0,0,0,0.2); }
         }
         
-        /* [헤더 디자인] - 상단 세이프 에어리어 자동 계산 추가 */
+        /* [헤더 디자인] */
         .header { 
             width: 100%; 
             padding: calc(15px + env(safe-area-inset-top)) 15px 12px 15px; 
@@ -43,26 +48,17 @@
             border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
         }
 
-        /* [리스트 및 상세 화면] */
+        /* [검색 리스트] */
         #resultList { list-style: none; padding: 0; margin: 0; width: 100%; }
-        #resultList li { padding: 15px 20px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 16px; }
-        /* 1. 바탕색을 흰색으로 변경 */
-        html, body { 
-            width: 100%; 
-            height: 100%; 
-            margin: 0; 
-            padding: 0; 
-            overflow-x: hidden; 
-            background-color: #ffffff; /* 👈 어두운 색에서 흰색으로 변경 */
-        }
+        #resultList li { padding: 15px 20px; border-bottom: 1px solid #eee; cursor: pointer; }
+        #resultList li strong { font-size: 16px; color: #333; display: block; margin-bottom: 4px; }
+        #resultList li span { font-size: 13px; color: #888; display: block; line-height: 1.4; }
 
-        /* 2. 상세 화면: 하단 홈 바(Home Bar) 여백까지 고려 */
+        /* [상세 화면] */
         #imageSection { 
             display: none; 
-            /* 상단은 다이내믹 아일랜드를 피하고, 하단은 홈 바를 피하도록 설정 */
             padding: calc(10px + env(safe-area-inset-top)) 10px calc(20px + env(safe-area-inset-bottom)) 10px; 
-            width: 100%; 
-            background-color: #ffffff;
+            width: 100%; background-color: #ffffff;
         }
         .back-btn { 
             width: 100%; padding: 12px; font-size: 16px; background-color: #95a5a6; 
@@ -87,12 +83,12 @@
         <div class="header">
             <h2>찬송가 보관함</h2>
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="번호 또는 제목을 입력하세요" onkeyup="if(event.keyCode==13) searchHymn()">
+                <input type="text" id="searchInput" placeholder="번호, 제목 또는 가사 입력" onkeyup="if(event.keyCode==13) searchHymn()">
                 <button class="search-btn" onclick="searchHymn()">검색</button>
             </div>
         </div>
         <ul id="resultList">
-            <div class="empty-msg">번호나 제목으로 검색하세요.</div>
+            <div class="empty-msg">번호, 제목 또는 가사로 검색하세요.</div>
         </ul>
     </div>
 
@@ -111,7 +107,8 @@
 </div>
 
 <script>
-// [데이터 리스트]
+// [데이터 1: 이미지 파일명 리스트]
+// 실제 images 폴더에 있는 파일명과 똑같이 적어주세요.
 const fileList = [
 "001장_만복의_근원_하나님.jpg",
     "002장_찬양_성부_성자_성령.jpg",
@@ -758,50 +755,74 @@ const fileList = [
     "643장_아멘.jpg", 
     "644장_아멘.jpg", 
     "645장_아멘.jpg"
-    // 나머지 리스트를 여기에 추가하세요.
 ];
 
 let currentPlayingNo = ""; 
 
-// [개선된 검색 로직: 다중 번호 파일 지원]
+/**
+ * [함수 1] 통합 검색 실행
+ * hymn_data.js에 정의된 hymnData 배열을 검색합니다.
+ */
 function searchHymn() {
     const input = document.getElementById('searchInput').value.trim().toLowerCase();
     const resultList = document.getElementById('resultList');
     resultList.innerHTML = ''; 
+    
     if (!input) return;
 
-    const filtered = fileList.filter(file => file.toLowerCase().includes(input));
+    // 1. hymnData(가사 데이터)에서 검색
+    // 번호(no), 제목(title), 가사(lyrics) 중 하나라도 포함되면 필터링
+    const filtered = hymnData.filter(hymn => 
+        hymn.no.includes(input) || 
+        hymn.title.toLowerCase().includes(input) || 
+        hymn.lyrics.toLowerCase().includes(input)
+    );
+
     if (filtered.length === 0) {
         resultList.innerHTML = '<div class="empty-msg">검색 결과가 없습니다.</div>';
         return;
     }
 
-    filtered.forEach(file => {
-        // 파일명 내 모든 '숫자+장' 패턴 추출
-        const matches = [...file.matchAll(/(\d+)장/g)];
+    // 2. 결과 리스트 생성
+    filtered.forEach(hymn => {
+        const li = document.createElement('li');
         
-        if (matches.length > 0) {
-            // 검색어(input)가 숫자이고 파일에 포함된 번호 중 하나와 일치하면 그 번호를 사용
-            const matchedNumber = matches.find(m => m[1] === input);
-            const hymnNo = matchedNumber ? matchedNumber[1] : matches[0][1];
-
-            const li = document.createElement('li');
-            li.innerText = file.replace('.jpg', '').replace(/_/g, ' '); 
-            li.onclick = () => showImage(hymnNo);
-            resultList.appendChild(li);
+        // 제목 텍스트 (숫자로 변환 후 다시 문자로 찍어 "001" -> "1"로 표시)
+        const titleText = `<strong>${parseInt(hymn.no)}장. ${hymn.title}</strong>`;
+        
+        // 가사 미리보기 (검색어가 가사에 있으면 그 위치를 찾아서 보여줌)
+        let previewText = "";
+        const idx = hymn.lyrics.toLowerCase().indexOf(input);
+        if (idx > -1) {
+            // 검색어 위치 기준 앞뒤로 잘라서 보여주기
+            previewText = `<span>...${hymn.lyrics.substring(idx, idx + 30)}...</span>`;
+        } else {
+            // 가사 첫 부분 보여주기
+            previewText = `<span>${hymn.lyrics.substring(0, 35)}...</span>`;
         }
+
+        li.innerHTML = titleText + previewText;
+        
+        // 클릭 시 해당 번호로 이미지 표시 함수 호출
+        li.onclick = () => showImage(hymn.no);
+        resultList.appendChild(li);
     });
 }
 
-// [개선된 이미지 표시 로직]
+/**
+ * [함수 2] 선택한 곡의 이미지 표시
+ * hymnData에서 가져온 번호를 기반으로 fileList에서 파일을 찾습니다.
+ */
 function showImage(hymnNo) {
     const canvas = document.getElementById('imageCanvas');
     const audio = document.getElementById('hymnAudio');
     canvas.innerHTML = ''; 
     
-    // 재생할 번호 확정 (001 형식)
-    currentPlayingNo = hymnNo.padStart(3, '0');
+    // 번호를 "001" 형식의 세 자리로 맞춤 (오디오 및 파일 매칭용)
+    const fullNo = hymnNo.toString().padStart(3, '0');
+    currentPlayingNo = fullNo;
 
+    // 오디오 상태 리셋
     if (audio) {
         audio.pause();
         audio.src = "";
@@ -809,21 +830,29 @@ function showImage(hymnNo) {
         document.getElementById('audioStatus').innerText = "모드를 선택해 주세요.";
     }
 
-    // 파일명이 해당 번호를 포함하고 있는지 확인 (단순 포함이 아닌 '번호+장' 형태 매칭)
-    const targetFiles = fileList.filter(file => file.includes(hymnNo + "장"));
+    // fileList에서 번호가 일치하는 파일들을 찾음 (예: "001장" 포함 또는 "001_"로 시작)
+    const targetFiles = fileList.filter(file => file.includes(fullNo + "장") || file.startsWith(fullNo + "_"));
 
     if (targetFiles.length > 0) {
+        // 이미지를 캔버스에 추가
         targetFiles.forEach(fileName => {
             const img = document.createElement('img');
-            img.src = `images/${fileName}`;
+            img.src = `images/${fileName}`; 
             canvas.appendChild(img);
         });
+
+        // 화면 전환
         document.getElementById('searchView').style.display = 'none';
         document.getElementById('imageSection').style.display = 'block';
         window.scrollTo(0, 0); 
+    } else {
+        alert(parseInt(fullNo) + "장의 악보 이미지를 찾을 수 없습니다.\n(파일명이 '" + fullNo + "장' 형식인지 확인해주세요)");
     }
 }
 
+/**
+ * [함수 3] 오디오 재생 로직
+ */
 function playHymn(type) {
     const audio = document.getElementById('hymnAudio');
     const status = document.getElementById('audioStatus');
@@ -841,6 +870,9 @@ function playHymn(type) {
     });
 }
 
+/**
+ * [함수 4] 목록으로 돌아가기
+ */
 function showList() {
     const audio = document.getElementById('hymnAudio');
     if (audio) audio.pause();
