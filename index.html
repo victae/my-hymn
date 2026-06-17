@@ -66,11 +66,12 @@
         }
         
         .audio-container { 
-            margin-bottom: 12px; padding: 15px; background: #f8f9fa; 
+            margin-bottom: 12px; padding: 12px; background: #f8f9fa; 
             border-radius: 12px; border: 1px solid #eee; 
         }
-        .audio-btns { display: flex; gap: 10px; margin-bottom: 10px; }
-        .play-btn { flex: 1; padding: 12px; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; }
+        .audio-btns { display: flex; gap: 10px; }
+        .audio-btns.has-player { margin-bottom: 10px; } /* 오디오 플레이어가 켜지면 마진 추가 */
+        .play-btn { flex: 1; padding: 12px; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; }
         
         img { width: 100%; height: auto; display: block; margin-bottom: 8px; }
         .empty-msg { padding: 80px 20px; color: #999; text-align: center; }
@@ -95,12 +96,11 @@
     <div id="imageSection">
         <button class="back-btn" onclick="showList()">⬅️ 목록으로 돌아가기</button>
         <div class="audio-container">
-            <div class="audio-btns">
+            <div id="audioBtns" class="audio-btns">
                 <button class="play-btn" style="background-color: #27ae60;" onclick="playHymn('SING')">🎤 찬양</button>
                 <button class="play-btn" style="background-color: #2980b9;" onclick="playHymn('INST')">🎹 반주</button>
             </div>
             <audio id="hymnAudio" controls style="width: 100%; display: none;"></audio>
-            <p id="audioStatus" style="font-size: 12px; color: #888; margin: 0; text-align: center;">모드를 선택해 주세요.</p>
         </div>
         <div id="imageCanvas"></div>
     </div>
@@ -108,9 +108,8 @@
 
 <script>
 // [데이터 1: 이미지 파일명 리스트]
-// 실제 images 폴더에 있는 파일명과 똑같이 적어주세요.
 const fileList = [
-"001장_만복의_근원_하나님.jpg",
+    "001장_만복의_근원_하나님.jpg",
     "002장_찬양_성부_성자_성령.jpg",
     "003장_성부_성자와_성령.jpg",
     "004장_성부_성자와_성령.jpg",
@@ -548,7 +547,7 @@ const fileList = [
     "436장_나_이제_주님의_새_생명_얻은_몸.jpg",
     "437장_하늘_보좌_떠나서.jpg",
     "438장_내_영혼이_은총_입어.jpg",
-    "439장_십자가로_가까이.jpg",
+    "439장_십자가_로_가까이.jpg",
     "440장_어디든지_예수_나를_이끌면.jpg",
     "441장_은혜_구한_내게_은혜의_주님.jpg",
     "442장_저_장미꽃_위에_이슬.jpg",
@@ -563,7 +562,7 @@ const fileList = [
     "451장_예수_영광_버리사.jpg",
     "452장_내_모든_소원_기도의_제목.jpg",
     "453장_예수_더_알기_원하네.jpg",
-    "454장_주와_같이_되기를.jpg",
+    "454장_주와_같이_되기_를.jpg",
     "455장_주님의_마음을_본_받는_자.jpg",
     "456장_거친_세상에서_실패하거든.jpg",
     "457장_겟세마네_동산의.jpg",
@@ -761,7 +760,6 @@ let currentPlayingNo = "";
 
 /**
  * [함수 1] 통합 검색 실행
- * hymn_data.js에 정의된 hymnData 배열을 검색합니다.
  */
 function searchHymn() {
     const input = document.getElementById('searchInput').value.trim().toLowerCase();
@@ -770,8 +768,6 @@ function searchHymn() {
     
     if (!input) return;
 
-    // 1. hymnData(가사 데이터)에서 검색
-    // 번호(no), 제목(title), 가사(lyrics) 중 하나라도 포함되면 필터링
     const filtered = hymnData.filter(hymn => 
         hymn.no.includes(input) || 
         hymn.title.toLowerCase().includes(input) || 
@@ -783,27 +779,19 @@ function searchHymn() {
         return;
     }
 
-    // 2. 결과 리스트 생성
     filtered.forEach(hymn => {
         const li = document.createElement('li');
-        
-        // 제목 텍스트 (숫자로 변환 후 다시 문자로 찍어 "001" -> "1"로 표시)
         const titleText = `<strong>${parseInt(hymn.no)}장. ${hymn.title}</strong>`;
         
-        // 가사 미리보기 (검색어가 가사에 있으면 그 위치를 찾아서 보여줌)
         let previewText = "";
         const idx = hymn.lyrics.toLowerCase().indexOf(input);
         if (idx > -1) {
-            // 검색어 위치 기준 앞뒤로 잘라서 보여주기
             previewText = `<span>...${hymn.lyrics.substring(idx, idx + 30)}...</span>`;
         } else {
-            // 가사 첫 부분 보여주기
             previewText = `<span>${hymn.lyrics.substring(0, 35)}...</span>`;
         }
 
         li.innerHTML = titleText + previewText;
-        
-        // 클릭 시 해당 번호로 이미지 표시 함수 호출
         li.onclick = () => showImage(hymn.no);
         resultList.appendChild(li);
     });
@@ -811,37 +799,35 @@ function searchHymn() {
 
 /**
  * [함수 2] 선택한 곡의 이미지 표시
- * hymnData에서 가져온 번호를 기반으로 fileList에서 파일을 찾습니다.
  */
 function showImage(hymnNo) {
     const canvas = document.getElementById('imageCanvas');
     const audio = document.getElementById('hymnAudio');
+    const audioBtns = document.getElementById('audioBtns');
     canvas.innerHTML = ''; 
     
-    // 번호를 "001" 형식의 세 자리로 맞춤 (오디오 및 파일 매칭용)
     const fullNo = hymnNo.toString().padStart(3, '0');
     currentPlayingNo = fullNo;
 
-    // 오디오 상태 리셋
+    // 오디오 상태 및 UI 리셋
     if (audio) {
         audio.pause();
         audio.src = "";
         audio.style.display = 'none';
-        document.getElementById('audioStatus').innerText = "모드를 선택해 주세요.";
+    }
+    if (audioBtns) {
+        audioBtns.classList.remove('has-player');
     }
 
-    // fileList에서 번호가 일치하는 파일들을 찾음 (예: "001장" 포함 또는 "001_"로 시작)
     const targetFiles = fileList.filter(file => file.includes(fullNo + "장") || file.startsWith(fullNo + "_"));
 
     if (targetFiles.length > 0) {
-        // 이미지를 캔버스에 추가
         targetFiles.forEach(fileName => {
             const img = document.createElement('img');
             img.src = `images/${fileName}`; 
             canvas.appendChild(img);
         });
 
-        // 화면 전환
         document.getElementById('searchView').style.display = 'none';
         document.getElementById('imageSection').style.display = 'block';
         window.scrollTo(0, 0); 
@@ -855,18 +841,20 @@ function showImage(hymnNo) {
  */
 function playHymn(type) {
     const audio = document.getElementById('hymnAudio');
-    const status = document.getElementById('audioStatus');
+    const audioBtns = document.getElementById('audioBtns');
     const baseUrl = "https://pub-3e09c4a7bdce410d81cd2b400a526c9f.r2.dev"; 
     const fileUrl = `${baseUrl}/AUDIO/${type}/${currentPlayingNo}.mp3`;
     
     audio.src = fileUrl;
     audio.style.display = 'block';
-    status.innerText = "로딩 중...";
-    audio.play().then(() => {
-        status.innerText = (type === 'SING' ? "🎤 찬양" : "🎹 반주") + " 재생 중";
-    }).catch(() => {
-        status.innerText = "❌ 음원을 불러올 수 없습니다.";
+    if (audioBtns) {
+        audioBtns.classList.add('has-player'); // 플레이어가 나타나면 여백 추가
+    }
+    
+    audio.play().catch(() => {
+        alert("❌ 음원을 불러올 수 없습니다.");
         audio.style.display = 'none';
+        if (audioBtns) audioBtns.classList.remove('has-player');
     });
 }
 
